@@ -142,3 +142,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:8081',
 ]
 
+
+import os
+
+# Καθορίζει τον φάκελο στον οποίο θα αποθηκεύονται τα αρχεία (όπως οι εικόνες)
+MEDIA_URL = '/media/'  # Αυτός ο URL χρησιμοποιείται για να προσπελάσεις τα αρχεία
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Ο φάκελος στο σύστημα αρχείων
+

@@ -9,6 +9,10 @@ from .models import User
 from rest_framework.exceptions import AuthenticationFailed
 import jwt, datetime
 from rest_framework import status
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from .models import ProfessionalProfile
+from .serializers import ProfessionalProfileSerializer
 
 # Create your views here.
 class RegisterView(APIView):
@@ -100,3 +104,26 @@ class LogoutView(APIView):
             'message': 'Logout successful'
         }
         return response
+
+
+#API View για επεξεργασία του Επαγγελματικού Προφίλ με DRF
+#Δυο Views : ένα για την δημιουργία του επαγγελματικού προφίλ του χρήστη
+class ProfessionalProfileCreateView(generics.CreateAPIView):
+    queryset = ProfessionalProfile.objects.all()
+    serializer_class = ProfessionalProfileSerializer
+    permission_classes = [IsAuthenticated]  # Μόνο συνδεδεμένοι χρήστες μπορούν να το κάνουν
+
+    def perform_create(self, serializer):
+        # Εδώ συνδέουμε το προφίλ με τον χρήστη που είναι συνδεδεμένος
+        serializer.save(user=self.request.user)
+
+
+# ένα για την προβολή, ενημέρωση, διαγραφή του επαγγελματικού προφίλ του χρήστη
+class ProfessionalProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProfessionalProfile.objects.all()
+    serializer_class = ProfessionalProfileSerializer
+    permission_classes = [IsAuthenticated]  # Μόνο συνδεδεμένοι χρήστες μπορούν να το κάνουν
+
+    def get_object(self):
+        # Εξασφαλίζουμε ότι ο χρήστης θα βλέπει μόνο το δικό του επαγγελματικό προφίλ
+        return self.request.user.professional_profile
