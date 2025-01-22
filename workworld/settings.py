@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -147,5 +148,5 @@ import os
 
 # Καθορίζει τον φάκελο στον οποίο θα αποθηκεύονται τα αρχεία (όπως οι εικόνες)
 MEDIA_URL = '/media/'  # Αυτός ο URL χρησιμοποιείται για να προσπελάσεις τα αρχεία
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Ο φάκελος στο σύστημα αρχείων
-
+#MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Ο φάκελος στο σύστημα αρχείων
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -39,16 +39,19 @@ class RegisterView(APIView):
 # Create your views here.
 class LoginView(APIView):
     def post(self, request):
+        # Λήψη email και password από το αίτημα
         email=request.data['email']
         password=request.data['password']
+        # Αν δεν βρεθεί χρήστης με το συγκεκριμένο email
         user=User.objects.filter(email=email).first()
 
         if user is None:
             raise AuthenticationFailed('User not found')
-
+        # Έλεγχος κωδικού πρόσβασης
         if not user.check_password(password):
             raise AuthenticationFailed('Incorrect password')
 
+        # Δημιουργία του JWT token
         payload={
             'id': user.id,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
@@ -59,18 +62,16 @@ class LoginView(APIView):
 
         # Δημιουργία απάντησης με το Response από το Django REST Framework
 
-        response = Response({
-            'message': 'Login successful'
-        })
+        # Δημιουργία απάντησης
+        response_data = {
+            'message': 'Login successful',
+            'accessToken': token  # Προσθήκη του token στο σώμα της απόκρισης
+        }
 
-        # Ορισμός του JWT token στο cookie
-        response.set_cookie(
-            key='jwt',  # Το όνομα του cookie
-            value=token,  # Το περιεχόμενο του JWT token
-            httponly=True,  # Για να είναι ασφαλές (δεν μπορεί να προσπελαστεί από JavaScript)
-            max_age=datetime.timedelta(minutes=60),  # Η διάρκεια του cookie
+        # Δημιουργία της απόκρισης
+        response = Response(response_data)
 
-        )
+        #
 
         return response
 
