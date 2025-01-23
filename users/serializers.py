@@ -25,3 +25,9 @@ class ProfessionalProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfessionalProfile
         fields = ['job_type', 'ministry', 'company_type', 'specialization', 'job_name','experience', 'job_address', 'job_phone' , 'profile_picture']
+
+        def validate(self, data):
+            # Παράδειγμα: Έλεγχος αν λείπει το job_type
+            if not data.get('job_type'):
+                raise serializers.ValidationError({'job_type': 'Το πεδίο job_type είναι υποχρεωτικό.'})
+            return data

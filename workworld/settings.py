@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'workworld.urls'
@@ -150,3 +152,28 @@ import os
 MEDIA_URL = '/media/'  # Αυτός ο URL χρησιμοποιείται για να προσπελάσεις τα αρχεία
 #MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Ο φάκελος στο σύστημα αρχείων
 MEDIA_ROOT = BASE_DIR / 'media'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+          'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+SIMPLE_JWT = {
+    #'SIGNING_KEY': 'KKMFKOHUJFTR69873FLPIORSAEWGMNBV',  # Ορίζετε τον JWT secret key σας
+    'ALGORITHM': 'HS256',  # Αλγόριθμος υπογραφής (συνήθως HS256)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Διάρκεια ισχύος του access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Διάρκεια ισχύος του refresh token
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}
+
+
+
+
+
+
+
+
