@@ -149,9 +149,8 @@ CORS_ALLOWED_ORIGINS = [
 import os
 
 # Καθορίζει τον φάκελο στον οποίο θα αποθηκεύονται τα αρχεία (όπως οι εικόνες)
-MEDIA_URL = '/media/'  # Αυτός ο URL χρησιμοποιείται για να προσπελάσεις τα αρχεία
-#MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Ο φάκελος στο σύστημα αρχείων
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = 'api/media/'  # Αυτός ο URL χρησιμοποιείται για να προσπελάσεις τα αρχεία
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -169,6 +168,9 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+API_BASE_URL = 'http://192.168.1.131:8000/api'
+
 
 
 

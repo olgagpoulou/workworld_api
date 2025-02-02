@@ -17,4 +17,7 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+# Αν είμαστε σε κατάσταση ανάπτυξης, εξυπηρετούμε τα media αρχεία
+if settings.DEBUG:
+    urlpatterns += static('/media/', document_root=settings.MEDIA_ROOT)
