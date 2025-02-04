@@ -3,7 +3,12 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.shortcuts import render
+from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
+from .models import Conversation, Message
+from .serializers import MessageSerializer
+from .serializers import ConversationSerializer
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
@@ -89,34 +94,9 @@ class LoginView(APIView):
 
 
 class UserView(APIView):
-    permission_classes = [AllowAny]   # Εξαίρεση από το default IsAuthenticated
+    permission_classes = [IsAuthenticated]   # Εξαίρεση από το default IsAuthenticated
     def get(self, request):
-        #token = request.COOKIES.get('jwt')
-        # Αντί για request.COOKIES, διαβάζουμε το token από το header Authorization
-        token = request.headers.get('Authorization')
-        logger.debug(f"Token από το header: {token}")
-
-        if not token:
-            raise AuthenticationFailed('Token not found')
-        # Αφαιρούμε το πρόθεμα "Bearer " από το token
-        if not token.startswith("Bearer "):
-            raise AuthenticationFailed('Invalid token format')
-
-        token = token.split(" ")[1]  # Διαχωρίζουμε το token και παίρνουμε το δεύτερο μέρος
-
-        try:
-            #payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
-            logger.debug(f"Payload: {payload}")
-
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Invalid token')
-        except jwt.InvalidTokenError:
-                raise AuthenticationFailed('Invalid token')
-
-
-        user=User.objects.filter(id=payload['id']).first()
-
+        user = request.user  # Παίρνουμε τον χρήστη από το request
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
@@ -178,3 +158,47 @@ class UserProfileListView(generics.ListAPIView):
     serializer_class = ProfessionalProfileSerializer
     permission_classes = [IsAuthenticated]  # Προστασία της λίστας με JWT Authentication
     authentication_classes = [JWTAuthentication]  # Χρήση του JWT Authentication
+
+class UserListView(APIView):
+    permission_classes = [IsAuthenticated]  # Μόνο αυθεντικοποιημένοι χρήστες έχουν πρόσβαση
+
+    def get(self, request):
+        users = User.objects.all().exclude(email='olgi@gmail.com')  # Παίρνουμε όλους τους χρήστες
+        serializer = UserSerializer(users, many=True)  # many=True επειδή είναι λίστα
+        return Response(serializer.data)
+
+#Δημιουργια των Views για Conversation και message
+# Δημιουργια View για την λίστα των συνομιλιων Get-Post
+class ConversationListCreateView(generics.ListCreateAPIView):
+    queryset = Conversation.objects.all()
+    serializer_class = ConversationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Φιλτράρουμε τις συνομιλίες που ανήκουν στον χρήστη που είναι συνδεδεμένος
+        return self.queryset.filter(participants=self.request.user)
+
+#Δημιουργία View για μια συνομιλια
+class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Conversation.objects.all()
+    serializer_class = ConversationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Εξασφαλίζουμε ότι ο χρήστης μπορεί να δει ή να τροποποιήσει μόνο τις συνομιλίες του
+        return self.queryset.filter(participants=self.request.user)
+
+
+# Viewset για τη δημιουργία μηνυμάτων και προβολη αυτων ανα χρήστη
+class MessageListCreateView(generics.ListCreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        conversation = get_object_or_404(Conversation, id=self.kwargs['conversation_id'])
+        return Message.objects.filter(conversation=conversation)
+
+    def perform_create(self, serializer):
+        conversation = get_object_or_404(Conversation, id=self.kwargs['conversation_id'])
+        # Ο χρήστης που στέλνει το μήνυμα είναι ο συνδεδεμένος χρήστης
+        serializer.save(sender=self.request.user, conversation=conversation)
