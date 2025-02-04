@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import UserSerializer
 from rest_framework.response import Response
+from django.conf import settings
 from .models import User
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 import jwt, datetime
@@ -21,6 +22,9 @@ from .serializers import ProfessionalProfileSerializer
 import logging
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth import get_user_model
+
+# Δημιουργία logger
+logger = logging.getLogger(__name__)
 
 User= get_user_model()
 
@@ -85,24 +89,37 @@ class LoginView(APIView):
 
 
 class UserView(APIView):
-    permission_classes = [AllowAny]  # Εξαίρεση από το default IsAuthenticated
+    permission_classes = [AllowAny]   # Εξαίρεση από το default IsAuthenticated
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        # Αντί για request.COOKIES, διαβάζουμε το token από το header Authorization
+        token = request.headers.get('Authorization')
+        logger.debug(f"Token από το header: {token}")
 
         if not token:
             raise AuthenticationFailed('Token not found')
+        # Αφαιρούμε το πρόθεμα "Bearer " από το token
+        if not token.startswith("Bearer "):
+            raise AuthenticationFailed('Invalid token format')
+
+        token = token.split(" ")[1]  # Διαχωρίζουμε το token και παίρνουμε το δεύτερο μέρος
+
         try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+            #payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
+            logger.debug(f"Payload: {payload}")
 
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Invalid token')
+        except jwt.InvalidTokenError:
+                raise AuthenticationFailed('Invalid token')
 
 
         user=User.objects.filter(id=payload['id']).first()
 
         serializer = UserSerializer(user)
-
         return Response(serializer.data)
+
 
 class LogoutView(APIView):
     def post(self, request):
@@ -155,3 +172,9 @@ class ProfessionalProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
          return self.request.user.professional_profile
 
 
+# endpoint για την λίστα αυτων που εχουν δημιουργησει επαγγελματικο προφιλ
+class UserProfileListView(generics.ListAPIView):
+    queryset = ProfessionalProfile.objects.all()  # Λαμβάνεις όλα τα προφίλ
+    serializer_class = ProfessionalProfileSerializer
+    permission_classes = [IsAuthenticated]  # Προστασία της λίστας με JWT Authentication
+    authentication_classes = [JWTAuthentication]  # Χρήση του JWT Authentication

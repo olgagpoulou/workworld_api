@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
     refreshToken = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields =['id','name','email','password', 'accessToken', 'refreshToken', 'refreshToken']
+        fields =['id','name','email','password', 'accessToken', 'refreshToken',]
         extra_kwargs={
             'password': {'write_only':True}
         }

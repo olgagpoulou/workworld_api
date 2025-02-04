@@ -63,7 +63,8 @@ class ProfessionalProfile(models.Model):
     )
     job_type = models.CharField(
         max_length=50,
-        choices=JOB_TYPE_CHOICES
+        choices=JOB_TYPE_CHOICES,
+
     )
     ministry = models.CharField(
         max_length=50,
