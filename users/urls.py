@@ -6,7 +6,7 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .views import RegisterView, LoginView, UserView, LogoutView,UserProfileListView,UserListView
 from .views import ProfessionalProfileCreateView, ProfessionalProfileDetailView
-from .views import ConversationListCreateView, ConversationDetailView, MessageListCreateView
+from .views import ConversationListCreateView, ConversationDetailView, MessageListCreateView,CreateConversationView,MarkMessagesAsRead
 urlpatterns = [
 
     path('register/', RegisterView.as_view(), name='register'),
@@ -26,7 +26,10 @@ urlpatterns = [
     path('conversations/', ConversationListCreateView.as_view(), name='conversations-list-create'),
     #με αυτο το url μπορω να κανω Get-Post μνμ σε μια συγκεκριμενη συνομιλία
     path('conversations/<int:conversation_id>/messages/', MessageListCreateView.as_view(), name='message-list-create'),
-
+    #με αυτο το url ελεγχω αν υπάρχει συνομιλία και αν οχι την δημιουργώ
+    path('conversations/create/', CreateConversationView.as_view(), name='create-conversation'),
+    #με αυτο το url ελέγχω αν υπάρχουν αδιαβαστα μηνυματα ωστε να εμφανισω ενδειξη
+path('conversations/<int:conversation_id>/mark-read/', MarkMessagesAsRead.as_view(), name='mark-messages-read'),
 ]
 # Αν είμαστε σε κατάσταση ανάπτυξης, εξυπηρετούμε τα media αρχεία
 if settings.DEBUG:

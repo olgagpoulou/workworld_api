@@ -7,6 +7,7 @@ from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from .models import Conversation, Message
 from .serializers import MessageSerializer
+from .serializers import MessageSerializersend
 from .serializers import ConversationSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -23,7 +24,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from .models import ProfessionalProfile
-from .serializers import ProfessionalProfileSerializer
+from .serializers import ProfessionalProfileSerializer, CreateConversationSerializer
 import logging
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth import get_user_model
@@ -188,6 +189,12 @@ class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Εξασφαλίζουμε ότι ο χρήστης μπορεί να δει ή να τροποποιήσει μόνο τις συνομιλίες του
         return self.queryset.filter(participants=self.request.user)
 
+    def get(self, request, *args, **kwargs):
+        conversation = self.get_object()
+        messages = conversation.messages.filter(is_read=False).exclude(sender=request.user)
+        messages.update(is_read=True)  # Ενημερώνουμε όλα τα μη αναγνωσμένα ως διαβασμένα
+        return super().get(request, *args, **kwargs)
+
 
 # Viewset για τη δημιουργία μηνυμάτων και προβολη αυτων ανα χρήστη
 class MessageListCreateView(generics.ListCreateAPIView):
@@ -198,7 +205,58 @@ class MessageListCreateView(generics.ListCreateAPIView):
         conversation = get_object_or_404(Conversation, id=self.kwargs['conversation_id'])
         return Message.objects.filter(conversation=conversation)
 
+    #εχω φτιαξει δυο seriaizers εναν για get-εναν για post
+    def get_serializer_class(self):
+        """Επιλογή διαφορετικού serializer ανάλογα με το request method"""
+        if self.request.method == "POST":
+            return MessageSerializersend  # Serializer για αποστολή μηνύματος
+        return MessageSerializer  # Serializer για λήψη μηνυμάτων
     def perform_create(self, serializer):
         conversation = get_object_or_404(Conversation, id=self.kwargs['conversation_id'])
         # Ο χρήστης που στέλνει το μήνυμα είναι ο συνδεδεμένος χρήστης
         serializer.save(sender=self.request.user, conversation=conversation)
+
+
+#Viewset για ελεγχο και δημιουργια μιας συνομιλίας !Αν υπαρχει συνομιλια επεστρεψε την αλλιως δημιουργησε μια νεα
+class CreateConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateConversationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            receiver_id = serializer.validated_data["receiver_id"]
+            sender = request.user
+            receiver = User.objects.get(id=receiver_id)
+
+            # Έλεγχος αν υπάρχει ήδη συνομιλία μεταξύ των δύο χρηστών
+            existing_conversation = Conversation.objects.filter(participants=sender).filter(
+                participants=receiver).first()
+
+            if existing_conversation:
+                return Response(
+                    {"message": "Conversation already exists", "conversation_id": existing_conversation.id},
+                    status=status.HTTP_200_OK
+                )
+
+            # Δημιουργία νέας συνομιλίας
+            conversation = Conversation.objects.create()
+            conversation.participants.add(sender, receiver)
+            conversation.save()
+
+            return Response(
+                {"message": "Conversation created", "conversation_id": conversation.id},
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#Viewset για να ελέγχουμε αν διαβαστηκαν ολα τα μηνυματα! Θα το χρησιμοποιησουμε ωστε να
+#εμφανιζουμε ενδειξη για αδιάβαστα μηνυματα
+class MarkMessagesAsRead(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        messages = conversation.messages.filter(is_read=False).exclude(sender=request.user)
+        messages.update(is_read=True)  # Μαρκάρουμε τα μηνύματα ως αναγνωσμένα
+        return Response({"message": "Messages marked as read"})

@@ -48,10 +48,15 @@ class ProfessionalProfileSerializer(serializers.ModelSerializer):
 #serializers για τα μοντελα convarsation και message
 class ConversationSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
+    unread_messages = serializers.SerializerMethodField()
+
+    def get_unread_messages(self, obj):
+        user = self.context['request'].user
+        return obj.messages.filter(is_read=False).exclude(sender=user).count()
 
     class Meta:
         model = Conversation
-        fields = ['id', 'participants', 'created_at']
+        fields = ['id', 'participants', 'created_at', 'unread_messages']
 
 class MessageSerializer(serializers.ModelSerializer):
     # Ο sender είναι χρήστης, οπότε το σχετικό πεδίο θα είναι το PrimaryKeyRelatedField
@@ -61,3 +66,19 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ['id', 'sender', 'conversation', 'content', 'timestamp']
+
+#δευτερος για μηνυματα
+class MessageSerializersend(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'content']  # Μόνο το περιεχόμενο του μηνύματος
+
+#serializer για δημιουργια συνομιλίας
+class CreateConversationSerializer(serializers.Serializer):
+    receiver_id = serializers.IntegerField()
+
+    def validate_receiver_id(self, value):
+        """Ελέγχει αν ο receiver υπάρχει"""
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError("User not found")
+        return value
