@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 import users
-from .models import User, ProfessionalProfile
+from .models import User, ProfessionalProfile,Conversation,Message
 
 admin.site.register(User)
 # Τα μοντέλα μου που θα φαίνονται σε σελίδα του Admin
@@ -12,6 +12,7 @@ class ProfessionalProfileAdmin(admin.ModelAdmin):
 
 # Καταχώρηση του ProfessionalProfile στο admin
 admin.site.register(ProfessionalProfile, ProfessionalProfileAdmin)
-
+admin.site.register(Conversation)  # Καταχωρούμε το μοντέλο Conversation
+admin.site.register(Message)  # Καταχωρούμε το μοντέλο Message
 
 # Register your models here.

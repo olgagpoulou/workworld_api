@@ -1,11 +1,16 @@
 from rest_framework import serializers
-from users.models import User
+#from users.models import User
 from .models import ProfessionalProfile
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from django.conf import settings
+from .models import Conversation
+from django.apps import apps
+from .models import Message
 
+# Λάβε το μοντέλο χρήστη μέσω της ρύθμισης AUTH_USER_MODEL
+User = apps.get_model(settings.AUTH_USER_MODEL)
 
 class UserSerializer(serializers.ModelSerializer):
     accessToken = serializers.SerializerMethodField()
@@ -40,3 +45,19 @@ class ProfessionalProfileSerializer(serializers.ModelSerializer):
         model = ProfessionalProfile
         fields = ['job_type', 'ministry', 'company_type', 'specialization', 'job_name','experience', 'job_address', 'job_phone' , 'profile_picture']
 
+#serializers για τα μοντελα convarsation και message
+class ConversationSerializer(serializers.ModelSerializer):
+    participants = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
+
+    class Meta:
+        model = Conversation
+        fields = ['id', 'participants', 'created_at']
+
+class MessageSerializer(serializers.ModelSerializer):
+    # Ο sender είναι χρήστης, οπότε το σχετικό πεδίο θα είναι το PrimaryKeyRelatedField
+    sender = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    conversation = serializers.PrimaryKeyRelatedField(queryset=Conversation.objects.all())
+
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'conversation', 'content', 'created_at']
